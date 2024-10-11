@@ -2,6 +2,7 @@ import json
 import time
 import sys
 import pandas as pd
+import numpy as np
 
 from typing import Generator
 from pathlib import Path
@@ -421,28 +422,35 @@ class Classifier:
         if 'submission_time' in batch_records.columns:
             batch_records = batch_records.sort_values(by='submission_time')
 
-        #Obtain the most recent record for the relevant case
-        case_index = batch_records.index[batch_records['case_id']==case_id].tolist()[-1]
-
         #Get and keep batch record
-        batch_id = batch_records.loc[case_index, 'batch_id']
-        submission_time = batch_records.loc[case_index, 'submission_time']
+        try:
+            #Obtain the most recent record for the relevant case
+            case_index = batch_records.index[batch_records['case_id']==case_id].tolist()[-1]
 
-        #Get and updated batch record
-        batch_record = openai.batches.retrieve(batch_id)
-        status = batch_record.status
-        output_file_id = batch_record.output_file_id
-        
-        batch_records.loc[case_index, 'status']=status
-        batch_records.loc[case_index, 'output_file_id']=output_file_id
+            #Retrive record
+            batch_id = batch_records.loc[case_index, 'batch_id']
+            submission_time = batch_records.loc[case_index, 'submission_time']
+    
+            #Get and updated batch record
+            batch_record = openai.batches.retrieve(batch_id)
+            status = batch_record.status
+            output_file_id = batch_record.output_file_id
+            
+            batch_records.loc[case_index, 'status']=status
+            batch_records.loc[case_index, 'output_file_id']=output_file_id
+    
+            #Print status if want to
+            if status_report == True:
+                self.log(f"[{case_id}] - submitted at {submission_time}, current status == {status}, output_file_id == {output_file_id}")
+    
+            #Uodate batch records
+            batch_records.to_excel(self.batch_records_name, index=False)
+        except:
+            status = np.nan
+            output_file_id = np.nan
+            
+            self.log(f"[{case_id}] - submisson record not found, current status == {status}, output_file_id == {output_file_id}")
 
-        #Print status if want to
-        if status_report == True:
-            self.log(f"[{case_id}] - submitted at {submission_time}, current status == {status}, output_file_id == {output_file_id}")
-
-        #Uodate batch records
-        batch_records.to_excel(self.batch_records_name, index=False)
-        
         return {'status': status, 'output_file_id': output_file_id}
 
     def batch_retrieve_online(

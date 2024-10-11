@@ -16,6 +16,8 @@ openpyxl = "^3.1.2"
 jupyter = "^1.0.0"
 ipykernel = "^6.29.4"
 pandas = "^2.2.2"
+datetime
+numpy
 
 [tool.poetry.scripts]
 classify = "langchainlaw.langchainlaw:cli"
