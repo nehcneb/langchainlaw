@@ -2,7 +2,6 @@ import json
 import time
 import sys
 import pandas as pd
-import numpy as np
 
 from typing import Generator
 from pathlib import Path
@@ -322,6 +321,7 @@ class Classifier:
                 response = self.cache.read(case_id, prompt.name)
             if response is not None:
                 self.log(f"[{case_id}] {prompt.name} - cached result")
+                self.log(f"[{case_id}] {prompt.name} - run 'classifier.classify()' instead to retrieve result")                
             else:
                 self.log(f"[{case_id}] {prompt.name} - producing batch input for LLM")
                 batch_input_dict = {"custom_id": self.custom_id(case_id, prompt), 
@@ -337,6 +337,7 @@ class Classifier:
     def batch_send(
         self,
         casefile: Path,
+        status_report: bool = False, 
         #test: bool = False, #Uncomment if want to enable testing
         prompts: list[str] = None,
         no_cache: bool = False,
@@ -349,55 +350,65 @@ class Classifier:
         #Uncomment below if want to enable testing
         #self.test = test
         #if not self.test:
+
+        #Decide whether to send batch depending on cacheing status
+        to_send = True
+        if not no_cache:
+            status_output_id = self.batch_check(casefile, status_report)            
+            if status_output_id['status'] != None:
+                to_send = False
+                self.log(f"[{case_id}] - found record for an earlier batch request, delete the record or set 'no_cache=True' to send a new batch request")
         
-        self.log(f"[{case_id}] - submitting batch input for all prompts for LLM")
-        
-        #Initialise openai
-        openai.api_key = self.api_key
-        
-        #Create a list of prompts
-        batch_input_list = []
-        for prompt in self.next_prompt():
-            if not prompts or prompt.name in prompts:
-                batch_input_line = self.batch_input_line(case_id, prompt, no_cache=no_cache)
-                batch_input_list.append(batch_input_line)
-                
-        #Convert the list of prompts to JSONL
-        df_jsonl = pd.DataFrame(batch_input_list)
-        jsonl_for_batching = df_jsonl.to_json(orient='records', lines=True)
-
-        #Submit batch request to LLM
-        batch_input_file = openai.files.create(
-            file = jsonl_for_batching.encode(encoding="utf-8"),
-            purpose="batch"
-        )
-        batch_input_file_id = batch_input_file.id
-        batch_record = openai.batches.create(
-            input_file_id=batch_input_file_id,
-            endpoint="/v1/chat/completions",
-            completion_window="24h", 
-
-        )
-
-        #Keep batch record
-        self.log(f"[{case_id}] - saving batch record to {self.batch_records_name}")
-        batch_record_dict = {"submission_time": datetime.now(), 
-           'status': batch_record.status, 
-           'batch_id': batch_record.id, 
-           'input_file_id': batch_record.input_file_id, 
-           'output_file_id': batch_record.output_file_id, 
-           'case_id': case_id,
-        }
-
-        batch_record_df = pd.DataFrame([batch_record_dict])
-        batch_records = pd.read_excel(self.batch_records_name, dtype=str).fillna("")
-        batch_records_updated = pd.concat([batch_records, batch_record_df], ignore_index=True)
-        batch_records_updated.to_excel(self.batch_records_name, index=False)
-
-        self.log(f"[{case_id}] pausing for {self.rate_limit}")
-        time.sleep(self.rate_limit)
-
-        return batch_record_dict
+        if to_send == True:
+            
+            self.log(f"[{case_id}] - submitting batch input for all prompts for LLM")
+            
+            #Initialise openai
+            openai.api_key = self.api_key
+            
+            #Create a list of prompts
+            batch_input_list = []
+            for prompt in self.next_prompt():
+                if not prompts or prompt.name in prompts:
+                    batch_input_line = self.batch_input_line(case_id, prompt, no_cache=no_cache)
+                    batch_input_list.append(batch_input_line)
+                    
+            #Convert the list of prompts to JSONL
+            df_jsonl = pd.DataFrame(batch_input_list)
+            jsonl_for_batching = df_jsonl.to_json(orient='records', lines=True)
+    
+            #Submit batch request to LLM
+            batch_input_file = openai.files.create(
+                file = jsonl_for_batching.encode(encoding="utf-8"),
+                purpose="batch"
+            )
+            batch_input_file_id = batch_input_file.id
+            batch_record = openai.batches.create(
+                input_file_id=batch_input_file_id,
+                endpoint="/v1/chat/completions",
+                completion_window="24h", 
+    
+            )
+    
+            #Keep batch record
+            self.log(f"[{case_id}] - saving batch record to {self.batch_records_name}")
+            batch_record_dict = {"submission_time": datetime.now(), 
+               'status': batch_record.status, 
+               'batch_id': batch_record.id, 
+               'input_file_id': batch_record.input_file_id, 
+               'output_file_id': batch_record.output_file_id, 
+               'case_id': case_id,
+            }
+    
+            batch_record_df = pd.DataFrame([batch_record_dict])
+            batch_records = pd.read_excel(self.batch_records_name, dtype=str).fillna("")
+            batch_records_updated = pd.concat([batch_records, batch_record_df], ignore_index=True)
+            batch_records_updated.to_excel(self.batch_records_name, index=False)
+    
+            self.log(f"[{case_id}] pausing for {self.rate_limit}")
+            time.sleep(self.rate_limit)
+    
+            return batch_record_dict
 
     def batch_check(
         self,
@@ -449,13 +460,13 @@ class Classifier:
     
             #Uodate batch records
             batch_records.to_excel(self.batch_records_name, index=False)
-        except:
-            status = np.nan
-            output_file_id = np.nan
-            
-            self.log(f"[{case_id}] - submisson record not found, current status == {status}, output_file_id == {output_file_id}")
 
-        return {'status': status, 'output_file_id': output_file_id}
+            #Return
+            return {'status': status, 'output_file_id': output_file_id}
+
+        except:
+            self.log(f"[{case_id}] - submisson record not found")
+            return {'status': None, 'output_file_id': None}
 
     def batch_retrieve_online(
         self, 

@@ -199,6 +199,13 @@ classifier.batch_send("cases/123456789abcdef0.json")
 
 One batch request is made for one single case. Each line in the JSONL for the request contains one group of questions provided in the prompts spreadsheet.
 
+
+If you re-run ```classifier.batch_send```, the classifier will look for an earlier batch request and cache for each case / prompt combination first, and send a new batch request if and only if no such earlier batch request or cached result exists. To force the classifier to send a new batch request to the LLM even if an earlier batch request or a cached result exists, use the `--no-cache` flag. For example:
+```
+classifier.batch_send("cases/123456789abcdef0.json", no_cache = )
+```
+
+
 ### check the status of a batch request for a single case
 
 ```
