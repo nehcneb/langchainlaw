@@ -293,7 +293,11 @@ class Classifier:
         system_prompt = [{"role": "system", "content": self.start_chat().content}]
         user_prompt = [{"role": "user", "content": self.make_message(prompt).content}]
         messages = system_prompt + user_prompt
-        response_format = {"type": "json_object"}
+
+        if prompt.return_type == "json":
+            response_format = {"type": "json_object"}
+        else:     
+            response_format = {"type": "text"}
         
         body = {"model": self.model, 
             "messages": system_prompt + user_prompt,  
@@ -485,17 +489,6 @@ class Classifier:
                 df_batch_response = pd.read_json(batch_response.text, lines=True)
                 response_index = df_batch_response.index[df_batch_response['custom_id']==custom_id].tolist()[0]
                 response = df_batch_response.loc[response_index, 'response']['body']['choices'][0]['message']['content']
-
-                #Check if a JSON array is sought and returned but in the dict form of {str:[dict, dict, ...]} rather than the list form [dict, dict ... ] sought 
-                if prompt.return_type == "json_multiple":
-                    response_list = []
-                    response_json = json.loads(response)
-                    for key in response_json.keys():
-                        if type(response_json[key])==list:
-                            response_list += response_json[key]
-                        else:
-                            response_list.append({key: response_json[key]})
-                    response = json.dumps(response_list)
                 
         except Exception as e:
             return prompt.wrap_error(str(e))
