@@ -46,10 +46,12 @@ class Classifier:
             openai_api_key=self.api_cf["api_key"],
             openai_organization=self.api_cf["organization"],
             temperature=config["temperature"],
+            reasoning_effort=config["reasoning_effort"],
         )
         self.api_key = self.api_cf["api_key"]
         self.model = self.api_cf["model"]
         self.temperature = config["temperature"]
+        self.reasoning_effort=config["reasoning_effort"],
         self.df_batch_records = pd.read_excel(config["batch_records"], dtype=str).fillna("")
         self.batch_records_name = config["batch_records"]
         self.rate_limit = config.get("rate_limit", RATE_LIMIT)
@@ -290,7 +292,7 @@ class Classifier:
         system_prompt = [{"role": "system", "content": self.start_chat().content}]
         user_prompt = [{"role": "user", "content": self.make_message(prompt).content}]
         messages = system_prompt + user_prompt
-
+        
         if prompt.return_type == "json":
             response_format = {"type": "json_object"}
         else:     
@@ -300,6 +302,7 @@ class Classifier:
             "messages": system_prompt + user_prompt,  
             "response_format": response_format, 
             "temperature": self.temperature, 
+            "reasoning_effort": self.reasoning_effort, 
         }
 
         batch_input_dict = {}
