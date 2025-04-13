@@ -24,7 +24,7 @@ poetry install
 
 The `classify` command will classify a directory containing judgments in the
 json format output by the [nswcaselaw](https://github.com/Sydney-Informatics-Hub/nswcaselaw) library,
-caching the LLM responses and writing the results out to a spreadsheet. It
+caching the LLM responses and writing the results out to a spreadsheet. For [chat models](https://platform.openai.com/docs/models) such as GPT-4o, it
 is configured using a JSON file with the following format:
 
 ```
@@ -50,6 +50,8 @@ is configured using a JSON file with the following format:
 
 You should make a copy of `config.example.json` as `config.json` before you
 add your API keys.
+
+For reasoning models, the `temperature` parameter is not supported as of 13 April 2025. You can specify the `reasoning_effort` parameter as one of `low`, `medium`, and `high` instead (see, for example, `config.example.reasoning.json`).
 
 The configurations for files and directories for input and output are as
 follows:
