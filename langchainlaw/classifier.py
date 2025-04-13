@@ -6,7 +6,7 @@ import pandas as pd
 from typing import Generator
 from pathlib import Path
 
-from langchain.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI #Importing ChatOpenAI from langchain.chat_models instead of langchain.chat_models because langchain.chat_models does not support reasoning models as of 20250413
 from langchain.schema import HumanMessage, SystemMessage
 
 from langchainlaw.prompts import CasePrompt, CasePromptField, PromptException
@@ -19,6 +19,12 @@ from datetime import datetime
 
 RATE_LIMIT = 60
 
+#Specify reasoning models from OpenAI
+REASONING_MODELS = ['o1', 
+                    'o1-2024-12-17', 
+                    'o3-mini', 
+                    'o3-mini-2025-01-31'
+                   ]
 
 class Classifier:
     """Class which wraps up the case classifier. Config is a JSON object -
@@ -41,17 +47,29 @@ class Classifier:
         self.test = False
         self.headers = None
         self.quiet = quiet
-        self.chat = ChatOpenAI(
+        self.api_key = self.api_cf["api_key"]
+        self.model = self.api_cf["model"]
+
+        if self.model in REASONING_MODELS:
+            #For reasoning models, 'temperature' parameter not supported as of 20250413. Hence it will be defaulted to 1.
+            self.reasoning_effort = config["reasoning_effort"]
+            self.chat = ChatOpenAI(
             model_name=self.api_cf["model"],
             openai_api_key=self.api_cf["api_key"],
             openai_organization=self.api_cf["organization"],
-            temperature=config["temperature"],
-            reasoning_effort=config["reasoning_effort"],
-        )
-        self.api_key = self.api_cf["api_key"]
-        self.model = self.api_cf["model"]
-        self.temperature = config["temperature"]
-        self.reasoning_effort=config["reasoning_effort"],
+            reasoning_effort = self.reasoning_effort,
+            #temperature=1,
+            )
+        
+        else:
+            self.temperature = config["temperature"]
+            self.chat = ChatOpenAI(
+            model_name=self.api_cf["model"],
+            openai_api_key=self.api_cf["api_key"],
+            openai_organization=self.api_cf["organization"],
+            temperature=self.temperature,
+            )
+
         self.df_batch_records = pd.read_excel(config["batch_records"], dtype=str).fillna("")
         self.batch_records_name = config["batch_records"]
         self.rate_limit = config.get("rate_limit", RATE_LIMIT)
@@ -167,6 +185,10 @@ class Classifier:
         """Loads a Path as a JSON casefile"""
         with open(casefile, "r") as fh:
             self.judgment = json.load(fh)
+            
+        #If no 'mnc' key in casefile, then add blank 'mnc'
+        if 'mnc' not in self.judgment.keys():
+            self.judgment.update({'mnc': ''})
 
     def show_prompt(self, prompt_name: str):
         """This returns the named prompt without the judgement"""
@@ -289,22 +311,38 @@ class Classifier:
 
         """
         response = None
+
         system_prompt = [{"role": "system", "content": self.start_chat().content}]
+        
         user_prompt = [{"role": "user", "content": self.make_message(prompt).content}]
-        messages = system_prompt + user_prompt
+
+        #messages = system_prompt + user_prompt
         
         if prompt.return_type == "json":
             response_format = {"type": "json_object"}
         else:     
             response_format = {"type": "text"}
-        
-        body = {"model": self.model, 
-            "messages": system_prompt + user_prompt,  
-            "response_format": response_format, 
-            "temperature": self.temperature, 
-            "reasoning_effort": self.reasoning_effort, 
-        }
 
+        if self.model not in REASONING_MODELS:
+
+            body = {"model": self.model, 
+                "messages": system_prompt + user_prompt,  
+                "response_format": response_format, 
+                "temperature": self.temperature, 
+            }
+            
+        else:
+            #For reasoning models, use 'developer' instead of 'system' message and add 'reasoning_effort' parameter, see https://platform.openai.com/docs/guides/reasoning
+            #For reasoning models, 'temperature' parameter not supported as of 20250413
+            
+            developer_prompt = [{"role": "developer", "content": self.start_chat().content}]
+
+            body = {"model": self.model, 
+                "messages": developer_prompt + user_prompt,  
+                "response_format": response_format, 
+                'reasoning_effort': self.reasoning_effort
+            }
+            
         batch_input_dict = {}
         
         try:
