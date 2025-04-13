@@ -23,8 +23,7 @@ poetry install
 ## Command Line
 
 The `classify` command will classify a directory containing judgments in the
-json format output by the [nswcaselaw](https://github.com/Sydney-Informatics-Hub/nswcaselaw) library,
-caching the LLM responses and writing the results out to a spreadsheet. For [chat models](https://platform.openai.com/docs/models) such as GPT-4o, it
+json format output containing the key `file` (for example, judgments produced by the [nswcaselaw](https://github.com/Sydney-Informatics-Hub/nswcaselaw) library). This command will cache the LLM responses and write the results out to a spreadsheet. For [chat models](https://platform.openai.com/docs/models) such as GPT-4o, it
 is configured using a JSON file with the following format:
 
 ```
