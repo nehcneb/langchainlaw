@@ -52,7 +52,7 @@ is configured using a JSON file with the following format:
 You should make a copy of `config.example.json` as `config.json` before you
 add your API keys.
 
-For [chat models](https://platform.openai.com/docs/models) such as 3o-mini, the `temperature` parameter is not supported as of 13 April 2025. You can specify the `reasoning_effort` parameter as one of `low`, `medium`, and `high` instead (see, for example, `config.example.reasoning.json`).
+For [reasoning models](https://platform.openai.com/docs/models) such as 3o-mini, the `temperature` parameter is not supported as of 13 April 2025. You can specify the `reasoning_effort` parameter as one of `low`, `medium`, and `high` instead (see, for example, `config.example.reasoning.json`).
 
 The configurations for files and directories for input and output are as
 follows:
