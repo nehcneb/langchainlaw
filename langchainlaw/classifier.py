@@ -20,10 +20,16 @@ from datetime import datetime
 RATE_LIMIT = 60
 
 #Specify reasoning models from OpenAI
-REASONING_MODELS = ['o1', 
-                    'o1-2024-12-17', 
-                    'o3-mini', 
-                    'o3-mini-2025-01-31'
+REASONING_MODELS = ['o1',
+                    'o1-2024-12-17',
+                    'o1-pro',
+                    'o1-pro-2025-03-19',
+                    'o3-mini',
+                    'o3-mini-2025-01-31',
+                    'o3',
+                    'o3-2025-04-16',
+                    'o4-mini',
+                    'o4-mini-2025-04-16'
                    ]
 
 class Classifier:
