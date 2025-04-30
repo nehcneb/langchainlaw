@@ -15,7 +15,7 @@ Get a copy of the repo using `git clone` and then set up your Python environment
 and dependencies with `poetry install`:
 
 ```
-git clone git@github.com:Sydney-Informatics-Hub/langchainlaw.git
+git clone https://github.com/nehcneb/langchainlaw.git
 cd langchainlaw
 poetry install
 ```
