@@ -7,7 +7,8 @@ from typing import Generator
 from pathlib import Path
 
 from langchain_openai import ChatOpenAI #Importing ChatOpenAI from langchain.chat_models instead of langchain.chat_models because langchain.chat_models does not support reasoning models as of 20250413
-from langchain.schema import HumanMessage, SystemMessage
+#from langchain.schema import HumanMessage, SystemMessage #No longer work as of 20251210, see Tariq-Imran at https://github.com/langchain-ai/langchain/issues/8527
+from langchain_core.messages import HumanMessage, SystemMessage #Added non 20251210
 
 from langchainlaw.prompts import CasePrompt, CasePromptField, PromptException
 from langchainlaw.cache import Cache
