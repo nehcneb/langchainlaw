@@ -30,7 +30,15 @@ REASONING_MODELS = ['o1',
                     'o3',
                     'o3-2025-04-16',
                     'o4-mini',
-                    'o4-mini-2025-04-16'
+                    'o4-mini-2025-04-16',
+                    'gpt-5.2-pro',
+                    'gpt-5.2-codex',
+                    'gpt-5.2',
+                    'gpt-5.1-codex-max',
+                    'gpt-5.1-codex',
+                    'gpt-5.1',
+                    'gpt-5-mini',
+                    'gpt-5-nano',                    
                    ]
 
 class Classifier:
