@@ -38,8 +38,11 @@ REASONING_MODELS = ['o1',
                     'gpt-5.1-codex',
                     'gpt-5.1',
                     'gpt-5-mini',
-                    'gpt-5-nano',                    
-                   ]
+                    'gpt-5-nano',
+                    'gpt-5.4',                    
+                    'gpt-5.4-mini',
+                    'gpt-5.4-nano',
+                    ]
 
 class Classifier:
     """Class which wraps up the case classifier. Config is a JSON object -
