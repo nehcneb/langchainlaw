@@ -42,6 +42,11 @@ REASONING_MODELS = ['o1',
                     'gpt-5.4',                    
                     'gpt-5.4-mini',
                     'gpt-5.4-nano',
+                    'gpt-5.5',
+                    'gpt-5.5-pro',
+                    'gpt-5.6-sol',
+                    'gpt-5.6-terra',
+                    'gpt-5.6-luna',
                     ]
 
 class Classifier:
@@ -557,7 +562,14 @@ class Classifier:
                 
                 df_batch_response = pd.read_json(batch_response.text, lines=True)
                 response_index = df_batch_response.index[df_batch_response['custom_id']==custom_id].tolist()[0]
-                response = df_batch_response.loc[response_index, 'response']['body']['choices'][0]['message']['content']
+
+                try:
+                    
+                    response = df_batch_response.loc[response_index, 'response']['body']['choices'][0]['message']['content']
+
+                except:
+
+                    response = next(o for o in df_batch_response.loc[gpt_index, 'response']["body"]["output"] if o.get("type") == "message")["content"][0]["text"]
                 
         except Exception as e:
             return prompt.wrap_error(str(e))
